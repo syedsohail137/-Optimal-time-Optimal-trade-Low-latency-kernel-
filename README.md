@@ -1,38 +1,41 @@
 # AlphaOS: Bare-Metal Low-Latency Option Trading Engine
 
-An ultra-low-latency, zero-allocation, bare-metal operating system kernel designed to parse real-time **OPRA** option feeds and compute time/implied-time volatility alpha metrics under 10 nanoseconds. 
+A C++ bare-metal kernel project described as a low-latency parser and alpha engine for real-time OPRA options feeds. The repository description says it uses zero-copy DMA ring buffers and fixed-point math to detect pricing distortions in the OS kernel.
 
-By marrying **Arithimatica Grammmer's fixed-point integer mathematics ** with **Brahmagupta's grammar of pairs**, the system eliminates float calculations (`pow`, `exp`, `log`, `sqrt`) and `libm` overhead entirely, delivering an **11.7x execution speedup** over standard double-precision calculations.
+## Features
 
-## ⚡ Key Architectural Features
+- Freestanding, heapless design; the existing project documentation specifies `-ffreestanding` and `-nostdlib`.
+- Triple-buffer data flow (`display`, `render`, `spare`) with pointer swaps.
+- 64-byte alignment for data frames and option structures.
+- Fixed-point arithmetic (documented scale: 10,000) instead of floating-point math.
 
-* **Zero Memory Allocation:** Built strictly for freestanding bare-metal environments (`-ffreestanding`, `-nostdlib`). No `malloc`, no `std::vector`, entirely heapless.
-* **No-Fissure Data Engine:** Uses a continuous triple-buffer system (`display`, `render`, `spare`) mapping to hardware ring-buffers. Pointers swap atomically without copying data, guaranteeing no thread blocking or memory rifts.
-* **Cache-Aligned Boundaries:** Data frames and options structures are strictly aligned to 64-byte boundaries (`alignas(64)`) to eliminate false cache sharing and line splits.
-* **Fixed-Point Math:** Floating point math is replaced with integer base-deficit mechanics (SCALE = 10000). Divisions and fraction multiples utilize fixed shifts and optimized fast-multiplications (e.g., dividing by 0.4 uses a specialized ×10 / 4 multiplier).
+## Build
 
-## 📊 Backtest Performance (XAUUSD — 15 April 2026)
-Validated against real-world intraday high-volatility metrics (Spot Range: \$4,745.42 - \$4,870.30):
-* **Execution Latency:** `alpha_ratio()` runs in **~18 CPU cycles (~5.1ns)** vs. 210 cycles using float metrics. Full 16-strike snapshot processing finishes in **82ns**.
-* **Mathematical Precision Error:** Mean absolute error of **2.1%** (Max 3.8%), tracking safely under the alpha capture threshold.
+The documented prerequisites on Ubuntu are:
 
-## 🛠️ Build and Emulation Setup
-
-### Prerequisites
-Ensure you have the cross-compilation toolchain and emulator installed:
 ```bash
 sudo apt-get install clang lld nasm qemu-system-x86_64 xorriso grub-pc-bin
 ```
 
-### Compile & Build ISO
-Execute the automated build toolchain to assemble the binary image:
+Build the ISO using the repository script:
+
 ```bash
 chmod +x scripts/build.sh
 ./scripts/build.sh
 ```
 
-### Local Emulation
-Test execution loop within an isolated QEMU environment:
+## Emulate
+
+The README documents this QEMU command for the generated image:
+
 ```bash
 qemu-system-x86_64 -cdrom AlphaOS_XAUUSD_15Apr2026.iso -m 512 -nographic
 ```
+
+## Performance figures in the original documentation
+
+The original README reports approximately 18 CPU cycles (~5.1 ns) for `alpha_ratio()`, 82 ns for a 16-strike snapshot, and mean absolute error of 2.1% (maximum 3.8%) for an XAUUSD backtest dated 15 April 2026. These figures are project-reported and have not been independently verified here.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
